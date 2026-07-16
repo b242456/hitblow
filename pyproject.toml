@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "チームで育てる Hit & Blow ゲーム"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pygame>=2.6.1",
+]
 
 # 第3回でコメントを外す：`hitblow` コマンドが使えるようになる
 # [project.scripts]
