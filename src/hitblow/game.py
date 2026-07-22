@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import random
-from typing import Final
 
 from .core import judge
 from .game_gui import GameClosed, GameGUI
@@ -12,12 +11,11 @@ from .strikeout_gui import (
     WINDOW_HEIGHT as STRIKEOUT_HEIGHT,
     WINDOW_TITLE as STRIKEOUT_TITLE,
     WINDOW_WIDTH as STRIKEOUT_WIDTH,
+    StrikeoutClosed,
     get_throw_target,
     reset_turn_marks,
     show_throw_result,
 )
-
-LOCAL_HIT_PROBABILITY: Final[float] = 0.65
 
 
 def _format_guess(guess: list[str | None]) -> str:
@@ -28,30 +26,14 @@ def _format_guess(guess: list[str | None]) -> str:
     )
 
 
-def _resolve_local_throw(target_number: str) -> str | None:
-    """通信実装前のローカル版として、投球の命中・外れを確定する。
-
-    既存のstrikeout_gui.pyの単体動作確認と同じく、
-    65%の確率で照準番号へ命中し、35%の確率で外れとする。
-
-    Args:
-        target_number:
-            プレイヤーが狙った数字。
-
-    Returns:
-        命中した場合はtarget_number。
-        外れた場合はNone。
-    """
-    if random.random() < LOCAL_HIT_PROBABILITY:
-        return target_number
-
-    return None
-
-
 def _play_strikeout_turn(
     gui: GameGUI,
 ) -> list[str | None]:
     """ストラックアウトを3球行い、部分予想を返す。
+
+    物理演算版では get_throw_target が「物理的な着弾判定」を行い、
+    命中したパネル番号（str）または外れ（None）を直接返す。
+    そのため従来の「照準番号 + 確率判定（_resolve_local_throw）」は不要になった。
 
     Args:
         gui:
@@ -78,16 +60,17 @@ def _play_strikeout_turn(
 
     try:
         for _ in range(3):
-            target_number = get_throw_target(
-                unavailable_numbers
-            )
-
-            if target_number is None:
-                raise GameClosed
-
-            hit_number = _resolve_local_throw(
-                target_number
-            )
+            # get_throw_target は物理演算による着弾判定まで済ませ、
+            # 命中パネル番号（str）または外れ（None）を返す。
+            # ウィンドウが閉じられた場合は StrikeoutClosed を送出する。
+            try:
+                hit_number = get_throw_target(
+                    unavailable_numbers
+                )
+            except StrikeoutClosed as exc:
+                # ストラックアウト側のクローズ通知を
+                # ゲーム進行側の GameClosed へ変換する。
+                raise GameClosed from exc
 
             if hit_number is not None:
                 unavailable_numbers.add(hit_number)
@@ -97,8 +80,8 @@ def _play_strikeout_turn(
                 hit_number,
             )
 
+            # 新シグネチャ（引数2つ）: 命中番号と命中済み集合のみを渡す。
             show_throw_result(
-                target_number,
                 hit_number,
                 unavailable_numbers,
             )
@@ -200,10 +183,10 @@ def play(digits: int = 3) -> None:
 
                 if hit == digits:
                     keep_playing = gui.show_game_over(
-                        winner_name=player_name,
-                        player_names=player_names,
-                        secret_numbers=secret_numbers,
-                        history=history,
+                    winner_name=player_name,
+                    player_names=player_names,
+                    secret_numbers=secret_numbers,
+                    history=history,
                     )
                     break
 

@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Final
 
+from pathlib import Path
+from typing import Final
+
+import os
+
 try:
     import pygame
 except ImportError as exc:
@@ -24,7 +29,7 @@ C_PANEL = (34, 42, 70)
 C_BORDER = (76, 88, 132)
 
 C_TEXT = (228, 233, 252)
-C_SUBTEXT = (158, 168, 205)
+C_SUBTEXT = (255, 250, 250)
 C_ACCENT = (255, 208, 68)
 C_OK = (76, 210, 124)
 
@@ -61,16 +66,12 @@ class GameGUI:
 
     def _init_fonts(self) -> None:
         """日本語を表示しやすいフォントを優先して読み込む。"""
-        preferred = [
-            "Yu Gothic UI",
-            "Yu Gothic",
-            "Meiryo",
-            "MS Gothic",
-            "Noto Sans CJK JP",
-        ]
 
-        font_path = pygame.font.match_font(
-            ",".join(preferred)
+
+        font_path = (
+            Path(__file__).resolve().parent
+            / "font"
+            / "GenShinGothic-Bold.ttf"
         )
 
         def make_font(
@@ -94,7 +95,7 @@ class GameGUI:
         self.fonts = {
             "title": make_font(44, True),
             "heading": make_font(30, True),
-            "body": make_font(23),
+            "body": make_font(22),
             "small": make_font(18),
             "button": make_font(22, True),
             "digit": make_font(42, True),
@@ -269,7 +270,7 @@ class GameGUI:
         self.screen.fill(C_BG)
 
         self._draw_text(
-            "HIT & BLOW",
+            "ヒット & ブロー ＆ ストラックアウト",
             "title",
             C_ACCENT,
             (MAIN_WIDTH // 2, 62),
@@ -292,7 +293,7 @@ class GameGUI:
         """説明と1つのボタンを表示し、操作されるまで待つ。"""
         button = pygame.Rect(
             MAIN_WIDTH // 2 - 150,
-            560,
+            610,
             300,
             64,
         )
@@ -324,7 +325,7 @@ class GameGUI:
                 title,
                 "heading",
                 C_TEXT,
-                (MAIN_WIDTH // 2, 210),
+                (MAIN_WIDTH // 2, 200),
             )
 
             self._draw_multiline(
@@ -332,7 +333,7 @@ class GameGUI:
                 "body",
                 C_SUBTEXT,
                 MAIN_WIDTH // 2,
-                285,
+                280,
                 line_gap=12,
             )
 
@@ -346,17 +347,92 @@ class GameGUI:
 
     def show_intro(self) -> None:
         """ゲーム開始時の説明を表示する。"""
-        self._wait_for_single_button(
-            title="同じ端末で2人対戦",
-            message=(
-                "各プレイヤーが、1〜9から重複しない"
-                "3桁の秘密数字を設定します。\n"
-                "自分のターンでは、"
-                "ストラックアウトを3球行います。\n"
-                "3 Hitを先に取ったプレイヤーの勝利です。"
-            ),
-            button_label="秘密数字の設定へ",
+        import subprocess
+        import sys
+
+        import pathlib
+        pdf_path = (
+            pathlib.Path(__file__).resolve().parent
+            / "howtoplay"
+            / "howtoplay.pdf"
         )
+        
+        if sys.platform == "win32":
+            os.startfile(pdf_path)
+
+        start_button = pygame.Rect(
+            MAIN_WIDTH // 2 - 150,
+            610,
+            300,
+            64,
+        )
+
+        howto_button = pygame.Rect(
+            MAIN_WIDTH // 2 - 150,
+            530,
+            300,
+            56,
+        )
+
+        while True:
+            for event in pygame.event.get():
+                self._handle_common_event(event)
+
+                if (
+                    event.type == pygame.KEYDOWN
+                    and event.key in (
+                        pygame.K_RETURN,
+                        pygame.K_SPACE,
+                    )
+                ):
+                    return
+
+                if (
+                    event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button == 1
+                ):
+                    if start_button.collidepoint(event.pos):
+                        return
+
+                    if howto_button.collidepoint(event.pos):
+                        # OSに応じてPDFを開く
+                        if sys.platform == "win32":
+                            os.startfile(pdf_path)
+                        elif sys.platform == "darwin":
+                            subprocess.Popen(["open", pdf_path])
+                        else:
+                            subprocess.Popen(["xdg-open", pdf_path])
+
+            self._draw_frame_title()
+
+            self._draw_text(
+                "同じ端末で2人対戦",
+                "heading",
+                C_TEXT,
+                (MAIN_WIDTH // 2, 200),
+            )
+
+            self._draw_multiline(
+                "ストラックアウトで相手の数字を予想する、運と実力の戦い！",
+                "body",
+                C_SUBTEXT,
+                MAIN_WIDTH // 2,
+                280,
+                line_gap=12,
+            )
+
+            self._draw_button(
+                howto_button,
+                "ルール説明を見る",
+            )
+
+            self._draw_button(
+                start_button,
+                "数字の設定へ",
+            )
+
+            pygame.display.flip()
+            self.clock.tick(FPS)
 
     def show_handoff(
         self,
@@ -767,7 +843,7 @@ class GameGUI:
 
             self._draw_button(
                 button,
-                "次のプレイヤーへ",
+                "プレイヤー交代",
             )
 
             pygame.display.flip()
