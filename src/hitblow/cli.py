@@ -15,7 +15,7 @@ def open_rule() -> None:
     pdf_path = (
         Path(__file__).resolve().parent
         / "howtoplay"
-        / "howtoplay.pdf"
+        / "ForJupyterHub.pdf"
     )
 
     if not pdf_path.is_file():
@@ -44,7 +44,6 @@ def open_rule() -> None:
 def main():
     """ルールを表示し、可能であればゲームを開始する。"""
     # JupyterHub/サーバー環境のチェック
-    # これらの環境変数は一般的にJupyterHub環境でセットされています
     if (
         "JUPYTERHUB_USER" in os.environ 
         or "JPY_PARENT_PID" in os.environ

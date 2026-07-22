@@ -357,9 +357,6 @@ class GameGUI:
             / "howtoplay.pdf"
         )
         
-        if sys.platform == "win32":
-            os.startfile(pdf_path)
-
         start_button = pygame.Rect(
             MAIN_WIDTH // 2 - 150,
             610,
@@ -428,7 +425,7 @@ class GameGUI:
 
             self._draw_button(
                 start_button,
-                "数字の設定へ",
+                "ゲーム開始",
             )
 
             pygame.display.flip()
