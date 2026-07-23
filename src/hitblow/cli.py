@@ -52,7 +52,8 @@ def main():
         print("\n" + "="*50)
         print("【動作環境エラー】")
         print("JupyterHubではゲーム画面（GUI）を表示できません。")
-        print("PDFでルールを読み、exeをダウンロードしてローカルPCで遊んでください。")
+        print("以下のURLからhitblow.exeをダウンロードしてください")
+        print("https://github.com/b242456/hitblow/releases/tag/0.1.0_exe")
         print("="*50)
         open_rule()
         return
