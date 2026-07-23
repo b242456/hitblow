@@ -1,4 +1,4 @@
-"""PyInstaller用エントリーポイント。"""
+"""exe用エントリーポイント。"""
 import sys
 import os
 

@@ -61,42 +61,13 @@ AIに自分の機能のコードを実装してもらうためのプロンプト
 - ストラックアウトの最終結果は、ホストPCのサーバーが検証・確定する。
 - 投球結果およびHit / Blow結果は、両プレイヤーに共有する。
 
-### 通信方式
+### 対戦方式
 
 - PC用ゲームとしてPythonで開発する。
-- ホストPCがWebSocketゲームサーバーとして動作する。
-- ホストプレイヤーとクライアントプレイヤーは、ホストPCのWebSocketサーバーへ接続する。
-- 通信は同一LAN内で行う。
-- ホストPCが部屋を作成し、クライアントPCはホストPCのLAN内IPアドレスとポート番号を指定して参加する。
-- MVPでは部屋の自動検索を実装せず、ホストIPアドレスを手入力する。
-- ルーム管理、ターン管理、ストラックアウト結果、Hit / Blow判定、勝敗判定はホストPCのサーバーが管理する。
-
-### 1ターンの流れ
-
-1. サーバーが現在のプレイヤーへ `your_turn` を送信する。
-2. クライアントがストラックアウトGUIを表示する。
-3. プレイヤーは3球投げる。
-4. 各投球について、クライアントは狙った数字をサーバーへ送る。
-5. サーバーが投球結果を検証・確定し、両者へ送信する。
-6. 3球の結果から部分予想を作る。
-7. クライアントが部分予想をサーバーへ送信する。
-8. サーバーがHit / Blowを計算し、両者へ結果を通知する。
-9. `3 Hit`ならゲーム終了する。そうでなければ相手のターンへ移る。
+- 同一端末を使って2人対戦を行い、お互いが相手に見えないよう数字を設定した後、交互に予想を行う。
 
 ---
 
-## システム構成
-
-```text
-ホストPC
-  ├─ ホストプレイヤー用クライアント
-  └─ WebSocketゲームサーバー
-            ↑
-            │ LAN内WebSocket通信
-            ↓
-クライアントPC
-  └─ クライアントプレイヤー用クライアント
-```
 
 ---
 
@@ -107,65 +78,22 @@ AIに自分の機能のコードを実装してもらうためのプロンプト
 | `core.py` | 秘密数字・予想の検証、Hit / Blow計算、勝利判定 | GUI、通信、ゲーム進行 |
 | `strikeout.py` | 3球の投球結果、命中済み数字、部分予想の生成 | GUI描画、通信 |
 | `strikeout_gui.py` | Pygame画面、盤面描画、クリック、投球演出、結果表示 | Hit / Blow計算、通信 |
-| `protocol.py` | JSONメッセージの作成・検証・変換 | 接続管理、ゲーム状態管理 |
-| `room.py` | ルーム、プレイヤー、秘密数字、ターン、投球状態、勝敗状態の保持 | GUI、WebSocket送受信 |
-| `server.py` | WebSocketサーバー、メッセージ処理、サーバー側検証、状態更新、両者への通知 | GUI |
-| `client.py` | WebSocket接続、メッセージ送受信 | Hit / Blow計算、GUI描画 |
 | `game.py` | クライアント側のゲーム進行、GUI・通信・表示の統合 | 個別ロジックの詳細実装 |
+| `game_gui.py` | Hit＆BlowGUIの実装・
+予想結果の表示 |
 | `cli.py` | 起動モード選択、IP入力、プレイヤー名入力、起動処理 | ゲームルールの実装 |
 
 ---
 
-## 通信プロトコル
-
-### クライアントからサーバーへ送るメッセージ
-
-| `type` | 必須データ |
-|---|---|
-| `create_room` | `player_name` |
-| `join_room` | `room_id`, `player_name` |
-| `set_secret` | `secret` |
-| `throw_request` | `target_number` |
-| `submit_guess` | `guess` |
-| `disconnect` | なし |
-
-`submit_guess` の例:
-
-```json
-{
-  "type": "submit_guess",
-  "guess": ["1", null, "2"]
-}
-```
-
-### サーバーからクライアントへ送るメッセージ
-
-| `type` | 必須データ |
-|---|---|
-| `room_created` | `room_id`, `host_ip`, `port` |
-| `room_joined` | `room_id` |
-| `waiting_for_player` | なし |
-| `set_secret_request` | なし |
-| `game_started` | `first_player_id` |
-| `your_turn` | `turn_number` |
-| `opponent_turn` | `turn_number` |
-| `throw_result` | `throw_index`, `target_number`, `hit_number` |
-| `guess_result` | `player_id`, `guess`, `hit`, `blow` |
-| `game_finished` | `winner_id`, `secret_numbers` |
-| `error` | `message` |
-
----
 
 <指示書>
 
 ## 【目的】
-
-*今回、作成・追加・修正したい機能を記述する。*
-
-例:
-
-> ストラックアウトの1球分の結果を管理する`strikeout.py`を追加する。  
-> この機能は、命中番号または外れを記録し、3球分の部分予想を生成できるようにする。
+> ストラックアウトを管理する`strikeout.py`、`strikeout_gui.py`の内容を変更し、新たなゲーム性に変更する。  
+> ストライクアウトのゲーム性について、ボール投擲時のマウスのホールド時間によって、ボールの飛距離や飛ぶ角度が代わり、。
+> 現在の確率による当たり外れの判定や、数字のマスに自動的にカーソル照準が合う仕様をなくす。運ではなく球がマスに当たるか当たらないかでストライクを判断する。
+> マスへの投擲難易度を高く設定する。
+> 難易度調整が難しければ、マスを動的に動かしても良い。スロットのように、数秒周期で列ごとに回転するなど。
 
 ## 【変更対象】
 
@@ -176,77 +104,21 @@ AIに自分の機能のコードを実装してもらうためのプロンプト
 ```text
 変更・追加してよいファイル:
 - src/hitblow/strikeout.py
-- tests/test_strikeout.py
+- src/hitblow/strikeout_gui.py
 
 変更してはいけないファイル:
 - src/hitblow/core.py
 - src/hitblow/game.py
 - src/hitblow/cli.py
+- src/hitblow/game_gui.py
 ```
 
 ## 【既存の責務】
 
-*今回の変更対象と、既存システムの責務境界を記述する。*
+
 
 例:
-
-> `core.py`はHit / Blow判定のみを担当している。  
-> `strikeout.py`は投球結果と部分予想の管理のみを担当する。  
-> `strikeout.py`にはPygame、WebSocket通信、CLI表示を実装しない。
-
-## 【入出力・インターフェース】
-
-*追加・変更する関数、クラス、引数、戻り値、例外を具体的に記述する。*
-
-例:
-
-```python
-def record_throw(
-    throw_results: list[str | None],
-    hit_number: str | None,
-) -> list[str | None]:
-    """
-    1球分の結果を追加した新しい投球結果を返す。
-
-    - hit_numberが "1"〜"9" なら命中として追加する
-    - hit_numberがNoneなら外れとして追加する
-    - 元のthrow_resultsを直接変更しない
-    - すでに3球記録済みならValueErrorを送出する
-    """
-```
-
-## 【振る舞い】
-
-*正常ケース、異常ケース、具体例を記述する。*
-
-例:
-
-```python
-record_throw([], "1")
-# ["1"]
-
-record_throw(["1"], None)
-# ["1", None]
-
-record_throw(["1", None], "2")
-# ["1", None, "2"]
-
-record_throw(["1", None, "2"], "3")
-# ValueError
-```
-
-## 【テスト・確認方法】
-
-*テストケースと手動確認方法を記述する。*
-
-例:
-
-```text
-- 命中した数字を投球結果へ追加できること
-- 外れをNoneとして記録できること
-- 3球を超える追加でValueErrorになること
-- 既存のpytestがすべて通ること
-```
+> `strikeout.py`、`strikeout_gui.py`はストライクアウトのゲームと、その投球結果・部分予想の管理のみを担当しており、他の機能とはインターフェース以外独立している。  
 
 ## 【制約】
 
@@ -257,7 +129,6 @@ record_throw(["1", None, "2"], "3")
 ```text
 - Python標準ライブラリのみで実装する
 - 新しい外部ライブラリを追加しない
-- GUI、通信、ファイル入出力は追加しない
 - 既存の公開関数名・引数・戻り値を変更しない
 - 必要な仕様が不足している場合は、実装前に質問する
 ```

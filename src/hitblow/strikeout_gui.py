@@ -35,6 +35,7 @@ import random
 import sys
 import time
 from typing import Optional
+from pathlib import Path
 
 try:
     import pygame
@@ -202,6 +203,8 @@ def _ensure_init() -> None:
     _fonts["status"] = _make_font(font_path, 19)   # ステータス行
     _fonts["small"]  = _make_font(font_path, 16)   # 補助テキスト
     _fonts["effect"] = _make_font(font_path, 68)   # STRIKE / OUT エフェクト
+
+    pygame.mixer.init()
 
 # ────
 # 座標・スクロール・物理ユーティリティ
@@ -693,6 +696,15 @@ def get_throw_target(
         StrikeoutClosed: ウィンドウが閉じられた / ESC が押された。
     """
     _ensure_init()
+    bgm_path = (
+                Path(__file__).resolve().parent
+                / "sounds"
+                / "bgm.mp3"
+            )
+    if bgm_path:
+        pygame.mixer.music.load(bgm_path)
+        pygame.mixer.music.play(-1) 
+
     assert _clock is not None
 
     holding    = False
@@ -766,6 +778,7 @@ def show_throw_result(
         unavailable_numbers: 命中済みの番号集合（○表示用）。
     """
     _ensure_init()
+    pygame.mixer.music.stop()
     assert _clock is not None
 
     is_hit = hit_number is not None
@@ -800,6 +813,7 @@ def show_throw_result(
             override=override,
             effect=effect,
         )
+    
 
 # ────
 # __main__: スタンドアロンテスト（サーバーなし・物理演算版）
