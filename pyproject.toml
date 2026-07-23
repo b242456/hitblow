@@ -20,7 +20,8 @@ build-backend = "hatchling.build"
 packages = ["src/hitblow"]
 artifacts = ["src/hitblow/howtoplay/howtoplay.pdf",
 "src/hitblow/howtoplay/ForJupyterHub.pdf",
-"src/hitblow/font/GenShinGothic-Bold.ttf",]
+"src/hitblow/font/GenShinGothic-Bold.ttf",
+"src/hitblow/sounds/bgm.mp3",]
 
 [dependency-groups]
 dev = ["pytest>=8"]
